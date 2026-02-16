@@ -5,16 +5,12 @@ A small, config-driven sandbox for **training deep learning models** (starting w
 Initial focus: **facial emotion classification** using a CK+ (Kaggle-packaged) folder dataset.  
 Next: noisier datasets (e.g., FER2013 / FER+) to build data wrangling skills and compare how XAI behaves under noise.
 
----
-
 ## What to do right now
 
 ✅ Train a pretrained ResNet on a folder-based emotion dataset  
 ✅ Evaluate accuracy (and optionally F1/confusion matrix later)  
 ✅ Generate simple explanation maps (saliency) for test images  
 ✅ Keep runs reproducible via YAML configs (great for Git + experiment tracking)
-
----
 
 ## Repo layout (high-level)
 
@@ -26,7 +22,7 @@ data/           # raw & processed datasets (ignored by git)
 artifacts/      # outputs: checkpoints, heatmaps, reports (ignored by git)
 tests/          # smoke tests and quick checks
 ```
----
+
 
 ## Setup
 
@@ -47,8 +43,6 @@ pip install -r requirements.txt
 pip install -r torch-requirements.txt
 ```
 
----
-
 ## Data
 
 This project assumes the dataset is organized like:
@@ -66,8 +60,6 @@ data/raw/
 ```
 
 > Note: This repo does **not** include datasets. Keep all datasets in `data/` (gitignored).
-
----
 
 ## Quickstart (recommended order)
 
@@ -119,7 +111,7 @@ artifacts/explainability/exp001_resnet18_saliency_ckplus/
   ...
 ```
 
----
+
 
 ## Configs (YAML)
 
@@ -141,7 +133,7 @@ Benefits:
 * easy experiment swapping without editing code
 * later you can store the resolved config with results (e.g., in MongoDB)
 
----
+
 
 ## First XAI method: Saliency (Input Gradients)
 
@@ -156,7 +148,7 @@ Known limitation:
 
 * can look noisy. Upgrade path: **SmoothGrad** → **Grad-CAM**.
 
----
+
 
 ## Outputs
 
@@ -172,7 +164,7 @@ This repo writes outputs under `artifacts/` (gitignored):
 
   * heatmaps, overlays, attribution maps
 
----
+
 
 ## Roadmap (suggested)
 
@@ -191,13 +183,13 @@ This repo writes outputs under `artifacts/` (gitignored):
 
    * run config + metrics + explanation paths
 
----
+
 
 ## Notes on dataset licensing
 
 CK+/FER datasets often come with usage restrictions depending on the source. If you plan to publish results, verify the dataset’s license/terms from the original provider or the hosting platform.
 
----
+
 
 ## References
 
@@ -205,7 +197,7 @@ CK+/FER datasets often come with usage restrictions depending on the source. If 
 * FER2013 (Kaggle example): [https://www.kaggle.com/datasets/msambare/fer2013](https://www.kaggle.com/datasets/msambare/fer2013)
 * FER+ (Microsoft): [https://github.com/microsoft/FERPlus](https://github.com/microsoft/FERPlus)
 
----
+
 
 ## License
 
