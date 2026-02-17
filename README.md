@@ -23,7 +23,7 @@ artifacts/      # outputs: checkpoints, heatmaps, reports (ignored by git)
 tests/          # smoke tests and quick checks
 notebooks/      # Jupyter notebooks
 ```
-
+> Note: Each notebook answers one question to avoid rotting.
 
 ## Setup
 
