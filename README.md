@@ -167,7 +167,7 @@ This repo writes outputs under `artifacts/` (gitignored):
 
 
 
-## Roadmap
+## Roadmap (suggested)
 
 1. **exp001**: ResNet18 + Saliency on CK+ (Kaggle pack)
 2. **exp002**: ResNet18 + Grad-CAM (nicer maps)
