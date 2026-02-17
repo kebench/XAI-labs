@@ -21,6 +21,7 @@ src/xai_lab/    # reusable library code
 data/           # raw & processed datasets (ignored by git)
 artifacts/      # outputs: checkpoints, heatmaps, reports (ignored by git)
 tests/          # smoke tests and quick checks
+notebooks/      # Jupyter notebooks
 ```
 
 
@@ -166,7 +167,7 @@ This repo writes outputs under `artifacts/` (gitignored):
 
 
 
-## Roadmap (suggested)
+## Roadmap
 
 1. **exp001**: ResNet18 + Saliency on CK+ (Kaggle pack)
 2. **exp002**: ResNet18 + Grad-CAM (nicer maps)
