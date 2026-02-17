@@ -1,8 +1,0 @@
-label_name,train,val,test,total
-anger,94,20,21,135
-contempt,38,8,8,54
-disgust,124,26,27,177
-fear,52,12,11,75
-happy,145,31,31,207
-sadness,59,13,12,84
-surprise,174,37,38,249

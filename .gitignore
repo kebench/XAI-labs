@@ -4,6 +4,7 @@ data/interim/
 data/processed/
 artifacts/models/
 artifacts/explainability/
+artifacts/reports/
 
 # python
 __pycache__/
