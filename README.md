@@ -21,8 +21,9 @@ src/xai_lab/    # reusable library code
 data/           # raw & processed datasets (ignored by git)
 artifacts/      # outputs: checkpoints, heatmaps, reports (ignored by git)
 tests/          # smoke tests and quick checks
+notebooks/      # Jupyter notebooks
 ```
-
+> Note: Each notebook answers one question to avoid rotting.
 
 ## Setup
 
