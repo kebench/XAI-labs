@@ -112,6 +112,11 @@ artifacts/explainability/exp001_resnet18_saliency_ckplus/
   ...
 ```
 
+What to do if signals are bad:
+- tighten augmentations (reduce crop randomness / rotation)
+- confirm preprocessing (RGB conversion + normalization)
+- check for dataset leakage/artifacts (e.g., one class has different resolution)
+- use balancing (sampler) and check confusion matrix
 
 
 ## Configs (YAML)

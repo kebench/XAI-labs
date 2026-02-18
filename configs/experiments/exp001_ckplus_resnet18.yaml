@@ -1,0 +1,48 @@
+run:
+  name: exp001_ckplus_resnet18
+  seed: 42
+  output_dir: artifacts
+
+data:
+  train_csv: data/processed/ckplus/splits/train.csv
+  val_csv: data/processed/ckplus/splits/val.csv
+  test_csv: data/processed/ckplus/splits/test.csv
+  path_col: path
+  label_col: label
+  label_name_col: label_name
+
+model:
+  name: resnet18
+  pretrained: true
+  num_classes: 7
+  input_size: 224
+
+train:
+  epochs: 15
+  batch_size: 64
+  # With pretrained weights, the model is not learning from scratch, it's adjusting
+  # Too high LR can "forget" pretrained features quickly and destabilize training
+  # 1e-4 to 3e-4 is a very common starting band for fine-tuning with AdamW
+  lr: 0.0003
+  # Small dataset → high overfitting risk → a bit of weight decay helps
+  weight_decay: 0.01
+
+  balance:
+    # Sampler was chosen since it often improves recall for minority classes faster than just weighing the loss
+    method: sampler   # none | sampler | class_weights
+    # effective_num still upweights minority classes, but avoids extreme weights that overreact to tiny counts  
+    class_weight_method: effective_num
+    # stronger smoothing / more conservative weighting
+    beta: 0.999
+
+augment:
+  crop_scale_min: 0.85
+  hflip_p: 0.5
+  rotation_deg: 10
+  jitter_brightness: 0.15
+  jitter_contrast: 0.15
+
+xai:
+  num_images: 16
+  # deeper layers (layer4) in ResNet are more semantic—good for Grad-CAM localization
+  gradcam_layer: layer4
