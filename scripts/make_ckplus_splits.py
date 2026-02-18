@@ -13,7 +13,8 @@ from sklearn.model_selection import train_test_split
 # Supported image file extensions for dataset processing
 IMG_EXTS = {".png", ".jpg", ".jpeg", ".bmp", ".webp"}
 
-
+# Only used for file integrity verification.
+# DO NOT USE FOR ANY SECURITY MEASURES!
 def sha1_file(path: Path, chunk_size: int = 1024 * 1024) -> str:
     """
     Calculate SHA1 hash of a file for integrity verification.
