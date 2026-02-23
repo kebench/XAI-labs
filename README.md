@@ -27,6 +27,8 @@ notebooks/      # Jupyter notebooks
 
 ## Setup
 
+> Note: Scripts work out of the box because they add `src/` to `PYTHONPATH`. Package-style imports will be added later.
+
 ### 1) Create environment
 
 ```bash
