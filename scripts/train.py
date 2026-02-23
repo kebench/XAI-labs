@@ -54,8 +54,6 @@ from xai_lab.data.transforms.image import AugmentConfig, build_transforms
 from xai_lab.models.vision.resnet import build_resnet18
 from xai_lab.utils.paths import find_project_root
 
-# YAML is the nicest way to manage experiments.
-# Make sure PyYAML is installed: pip install pyyaml
 import yaml
 
 

@@ -8,6 +8,11 @@ from torchvision import transforms
 IMAGENET_MEAN = (0.485, 0.456, 0.406)
 IMAGENET_STD  = (0.229, 0.224, 0.225)
 
+# Augmentation effectively increases the "variety" to training data, 
+# but it doesn’t literally add more rows to your CSV.
+# What it does is it rotates, flips, and jitters the images in a random way.
+# This helps the model to learn more general features and be less sensitive to the specific appearance of the training data.
+
 
 @dataclass(frozen=True)
 class AugmentConfig:
