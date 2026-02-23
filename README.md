@@ -27,6 +27,8 @@ notebooks/      # Jupyter notebooks
 
 ## Setup
 
+> Note: Scripts work out of the box because they add `src/` to `PYTHONPATH`. Package-style imports will be added later.
+
 ### 1) Create environment
 
 ```bash
@@ -112,6 +114,11 @@ artifacts/explainability/exp001_resnet18_saliency_ckplus/
   ...
 ```
 
+What to do if signals from explanations are bad:
+- tighten augmentations (reduce crop randomness / rotation)
+- confirm preprocessing (RGB conversion + normalization)
+- check for dataset leakage/artifacts (e.g., one class has different resolution)
+- use balancing (sampler) and check confusion matrix
 
 
 ## Configs (YAML)

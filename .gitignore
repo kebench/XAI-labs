@@ -2,9 +2,7 @@
 data/raw/
 data/interim/
 data/processed/
-artifacts/models/
-artifacts/explainability/
-artifacts/reports/
+artifacts/*
 
 # python
 __pycache__/
