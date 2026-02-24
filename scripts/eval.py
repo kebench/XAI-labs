@@ -49,13 +49,7 @@ from xai_lab.core.metrics import precision_recall_f1_from_cm
 from xai_lab.data.datasets.image_csv import CsvImageDataset, CsvImageDatasetConfig
 from xai_lab.data.transforms.image import AugmentConfig, build_transforms
 from xai_lab.models.vision.resnet import build_resnet18
-from xai_lab.utils.paths import find_project_root
-
-
-def load_yaml(path: Path) -> Dict[str, Any]:
-    with open(path, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
-
+from xai_lab.utils.paths import find_project_root, load_yaml
 
 def get_device(prefer: Optional[str] = None) -> torch.device:
     """
@@ -269,5 +263,8 @@ if __name__ == "__main__":
 
     ckpt_path = Path(args.ckpt) if args.ckpt else None
     run_dir_path = Path(args.run_dir) if args.run_dir else None
+
+    if ckpt_path is None and run_dir_path is None:
+        raise SystemExit("Provide path to --ckpt or --run_dir")
 
     main(ckpt=ckpt_path, run_dir=run_dir_path, device_pref=args.device)

@@ -52,10 +52,7 @@ from xai_lab.core.engine import evaluate, train_one_epoch
 from xai_lab.data.datasets.image_csv import CsvImageDataset, CsvImageDatasetConfig
 from xai_lab.data.transforms.image import AugmentConfig, build_transforms
 from xai_lab.models.vision.resnet import build_resnet18
-from xai_lab.utils.paths import find_project_root
-
-import yaml
-
+from xai_lab.utils.paths import find_project_root, load_yaml
 
 # ----------------------------
 # Reproducibility helpers
@@ -133,11 +130,6 @@ def effective_num_class_weights(labels: np.ndarray, num_classes: int, beta: floa
 # ----------------------------
 # Config loading
 # ----------------------------
-def load_yaml(path: Path) -> Dict[str, Any]:
-    with open(path, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
-
-
 def now_stamp() -> str:
     """Timestamp for run folder naming."""
     return datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -383,5 +375,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, required=True, help="Path to experiment YAML config.")
     args = parser.parse_args()
+
+    if not Path(args.config).exists():
+        raise SystemExit(f"Config not found: {args.config}")
 
     main(Path(args.config))
