@@ -1,0 +1,25 @@
+# .github/ISSUE_TEMPLATE/config.yml
+# Controls the "New Issue" chooser and extra links shown to users.
+
+# When false, users MUST pick one of your templates (no blank issue option).
+blank_issues_enabled: false
+
+# Optional: show helpful links for things that should not be GitHub issues.
+# Replace OWNER/REPO and URLs to match your project.
+contact_links:
+  - name: "💬 Q&A / Usage Questions"
+    url: "https://github.com/ai-ok-systems/AI-OK-Trustmark/discussions"
+    about: "Ask how-to questions in Discussions so we keep Issues for actionable work."
+
+  - name: "🔒 Security Vulnerability"
+    url: "https://ai-ok.org/contact/"
+    about: "Please report security issues privately. Do NOT open a public issue."
+
+  # - name: "📄 Code of Conduct"
+  #   url: "https://github.com/OWNER/REPO/blob/main/CODE_OF_CONDUCT.md"
+  #   about: "Please read before filing an issue."
+
+  # You can add more links, e.g., docs site, roadmap, or a separate docs repo.
+  # - name: "📚 Documentation site"
+  #   url: "https://docs.example.com"
+  #   about: "If something is unclear in the docs, tell us here."
