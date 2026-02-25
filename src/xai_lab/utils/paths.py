@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Iterable
+import yaml
 
 
 def find_project_root(start: Path | None = None, markers: tuple[str, ...] = ("pyproject.toml", ".git", "requirements.txt")) -> Path:
@@ -34,3 +35,7 @@ def resolve_path(path_str: str, project_root: Path | None = None) -> Path:
 def resolve_paths(paths: Iterable[str], project_root: Path | None = None) -> list[Path]:
     root = project_root or find_project_root()
     return [resolve_path(p, root) for p in paths]
+
+def load_yaml(path: Path) -> Dict[str, Any]:
+    with open(path, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f)
