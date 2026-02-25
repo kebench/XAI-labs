@@ -1,0 +1,87 @@
+# This is an Issue Form (more structured than a .md template)
+name: "🐛 Bug Report"             # Shown in the template chooser
+description: "Report a bug or unexpected behavior"
+title: "[BUG] "                  # Pre-fills the issue title
+labels: ["bug", "needs-triage"]  # Auto-applied labels
+assignees: []                    # Optionally assign maintainers by default
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug! Please fill out the sections below as completely as you can.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What went wrong? Clear and concise is best.
+      placeholder: "The app crashes when I click Save…"
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: Exact steps to trigger the bug.
+      placeholder: |
+        1. Go to Settings
+        2. Click Save
+        3. Observe error modal
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What you thought would happen instead.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      description: How severe is this issue?
+      options:
+        - Low (Minor inconvenience, cosmetic issue)
+        - Medium (Impacts normal usage, workaround exists)
+        - High (Blocks usage, no workaround)
+        - Critical (Causes crashes/data loss/security issue)
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: App/package version (or commit SHA).
+      placeholder: "v1.2.3"
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: OS and runtime/browser versions.
+      placeholder: "macOS 14.5, Node 20.11, Chrome 127"
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs & Screenshots
+      description: Paste relevant logs or drag screenshots here.
+      render: shell
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched for duplicates
+          required: true
+        - label: I read the contributing guide
+          required: false
