@@ -86,7 +86,7 @@ def plot_line(
     plt.savefig(out_path, dpi=150)
     plt.close()
 
-    print(f"[make_report_plots] Saved line chart to {out_path}")
+    print(f"[report_plots] Saved line chart to {out_path}")
 
 
 def plot_loss_curves(df: pd.DataFrame, out_dir: Path) -> None:

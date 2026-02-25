@@ -10,6 +10,16 @@ It reads:
 - reports_dir/test_confusion_matrix.csv (if exists)
 
 And writes plots into reports_dir.
+
+-------------
+python scripts/make_report_plots.py \
+  --run_dir     artifacts/runs/<experiment>/<run_id>/ \
+  --reports_dir artifacts/reports/<experiment>/<run_id>/
+
+Notes
+-----
+- run_dir is where reproducibility artifacts live (checkpoints + metrics.jsonl + config copy).
+- reports_dir is where human-facing files live (plots, confusion matrix images, XAI outputs).
 """
 
 from __future__ import annotations
@@ -29,6 +39,22 @@ from xai_lab.utils.report_plots import (
 
 
 def main(run_dir: Path, reports_dir: Path) -> None:
+    """
+     Entry point for report plotting.
+
+    Parameters
+    ----------
+    run_dir:
+        Folder containing raw run outputs such as metrics.jsonl (and checkpoints).
+    reports_dir:
+        Folder where plots will be written.
+
+    Behavior
+    --------
+    - Infers class names from config_used.yaml + CSV (label_name column).
+    - Reads run_dir/metrics.jsonl (if it exists) and plots curves.
+    - Reads the confusion matrix files reports_dir (if it exists) and plots confusion matrices.
+    """
     run_dir = run_dir.resolve()
     reports_dir = reports_dir.resolve()
 
