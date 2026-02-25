@@ -1,0 +1,43 @@
+name: "📝 Misc / Other"
+description: "Submit any issue, suggestion, or request that doesn't fit other templates"
+title: "[OTHER] "
+labels: ["other"]
+assignees: []
+
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Provide details about this issue, request, or suggestion.
+      placeholder: "Add details here..."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      description: Choose a broad type if applicable.
+      options:
+        - Question
+        - Documentation
+        - Idea / Suggestion
+        - Feedback
+        - Other
+
+  - type: textarea
+    id: references
+    attributes:
+      label: References / Links
+      description: Include URLs, screenshots, or other context.
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Estimated Scope
+      description: Rough size of effort if actionable
+      options:
+        - Small (few hours)
+        - Medium (days)
+        - Large (weeks+)

@@ -1,0 +1,54 @@
+name: "✨ Feature Request"        # Shown in the template chooser
+description: "Propose a new idea or improvement"
+title: "[FEATURE] "              # Pre-fills the issue title
+labels: ["enhancement"]          # Auto-applied labels
+assignees: []                    # Optionally assign maintainers by default
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Tell us about your idea! The more context the better.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / Use Case
+      description: What problem does this solve? Who benefits?
+      placeholder: "It's hard to…"
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed Solution
+      description: What should we build? Include examples if helpful.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Any other approaches you’ve tried or considered?
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      description: Rough size of this feature.
+      options:
+        - Small (few hours)
+        - Medium (days)
+        - Large (weeks+)
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched for existing feature requests
+          required: true
+        - label: I’m willing to help implement this
+          required: false

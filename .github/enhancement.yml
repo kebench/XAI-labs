@@ -1,0 +1,65 @@
+name: "⚡ Enhancement / Optimization"
+description: "Suggest a performance improvement, refactor, or optimization"
+title: "[ENHANCEMENT] "
+labels: ["enhancement"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting an enhancement! Please provide as much context as possible so we can assess and prioritize it.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Current Problem / Pain Point
+      description: What's the performance issue or inefficiency?
+      placeholder: "API response takes ~2s when filtering, or DB query is slow..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed Enhancement
+      description: What optimization, refactor, or technique are you suggesting?
+      placeholder: "Add index on orders.user_id, optimize query, cache response..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Outcome
+      description: What improvement do you expect after the change?
+      placeholder: "Reduce response from 2s to 200ms; lower DB load by 40%."
+    validations:
+      required: true
+
+  - type: textarea
+    id: risks
+    attributes:
+      label: Risks / Trade-offs
+      description: Are there risks, downsides, or migrations involved?
+      placeholder: "Requires migration script; may increase index size on disk."
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Estimated Scope
+      description: Roughly how big is this task?
+      options:
+        - Small (few hours)
+        - Medium (days)
+        - Large (weeks+)
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I have searched for existing enhancement requests
+          required: true
