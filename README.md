@@ -99,19 +99,53 @@ artifacts/reports/exp001_resnet18_saliency_ckplus/
   train_log.jsonl   (optional if you log)
 ```
 
-### Step 3 — Explain (Saliency)
+### Step 3 — Evaluate
+```bash
+python scripts/evaluate.py --run_dir artifacts/runs/exp001_resnet18_saliency_ckplus
+```
+Evaluates the best checkpoint model on the test split and produces reports.
+
+```text
+artifacts/reports/exp001_resnet18_saliency_ckplus/<run_id>/
+  test_summary.json
+  test_confusion_matrix.csv
+```
+
+### Step 3.5 — Visualize (Confusion Matrix)
 
 ```bash
-python scripts/explain.py --config configs/experiments/exp001_resnet18_saliency_ckplus.yaml
+python scripts/make_report_plots.py --run_dir artifacts/runs/exp001_resnet18_saliency_ckplus --reports_dir artifacts/reports/exp001_resnet18_saliency_ckplus
 ```
 
 Expected outputs (example):
 
 ```text
-artifacts/explainability/exp001_resnet18_saliency_ckplus/
-  sample_0001.png
-  sample_0002.png
-  ...
+artifacts/reports/exp001_resnet18_saliency_ckplus/<run_id>/
+  test_confusion_matrix.png
+  train_loss.png
+  val_accuracy.png
+  val_loss.png
+  val_macrof1.png
+```
+
+### Step 4 — Explain (Saliency)
+
+```bash
+python scripts/explain.py --run_dir artifacts/runs/exp001_resnet18_saliency_ckplus --split test --num_each 8
+```
+
+Expected outputs (example):
+
+```text
+artifacts/reports/exp001_resnet18_saliency_ckplus/<run_id>/xai/saliency/
+  high_conf/
+    sample01.png
+    sample02.png
+    sample03.png
+  low_conf/
+    sample01.png
+    sample02.png
+    sample03.png
 ```
 
 What to do if signals from explanations are bad:
@@ -125,15 +159,19 @@ What to do if signals from explanations are bad:
 
 Experiments are defined in YAML. An experiment YAML typically references:
 
+* a run YAML
 * a data YAML
 * a model YAML
-* an explainer YAML
+* a train YAML
+* an augment YAML
 
 Example path:
 
 ```text
 configs/experiments/exp001_resnet18_saliency_ckplus.yaml
 ```
+
+A separate YAML file for explaination will be added later to have better flexibility for explaining the model.
 
 Benefits:
 
@@ -162,16 +200,8 @@ Known limitation:
 
 This repo writes outputs under `artifacts/` (gitignored):
 
-* `artifacts/reports/<run_name>/`
-
-  * training logs, metrics, summaries
-* `artifacts/models/<run_name>/`
-
-  * checkpoints (optional location)
-* `artifacts/explainability/<run_name>/`
-
-  * heatmaps, overlays, attribution maps
-
+* `artifacts/reports/<experiment_name>/<run_name>/` - Contains user-facing reports and visualizations
+* `artifacts/runs/<experiment_name>/<run_name>/` - Contains model checkpoints, logs, and other run artifacts
 
 
 ## Roadmap (suggested)
@@ -181,7 +211,6 @@ This repo writes outputs under `artifacts/` (gitignored):
 3. Add evaluation:
 
    * confusion matrix
-   * per-class accuracy
    * macro-F1
 4. Move to noisy dataset:
 
@@ -191,7 +220,13 @@ This repo writes outputs under `artifacts/` (gitignored):
 
    * run config + metrics + explanation paths
 
+## Results
+<img src="docs/saliency_high_conf_prediction.png" alt="Saliency High Confidence Prediction">
 
+
+<img src="docs/saliency_low_conf_prediction.png" alt="Saliency Low Confidence Prediction">
+
+_Analysis to follow after the GradCAM implementation_
 
 ## Notes on dataset licensing
 
@@ -201,9 +236,11 @@ CK+/FER datasets often come with usage restrictions depending on the source. If 
 
 ## References
 
+* CK+ Dataset: Lucey, P., Cohn, J. F., Kanade, T., Saragih, J., Ambadar, Z., & Matthews, I. (2010). The Extended Cohn-Kanade Dataset (CK+): A complete dataset for action unit and emotion-specified expression. IEEE Transactions on Pattern Analysis and Machine Intelligence, 32(12), 2260-2277.
 * Grad-CAM: [https://arxiv.org/abs/1610.02391](https://arxiv.org/abs/1610.02391)
 * FER2013 (Kaggle example): [https://www.kaggle.com/datasets/msambare/fer2013](https://www.kaggle.com/datasets/msambare/fer2013)
 * FER+ (Microsoft): [https://github.com/microsoft/FERPlus](https://github.com/microsoft/FERPlus)
+
 
 
 
