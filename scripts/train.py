@@ -21,6 +21,14 @@ A script runs top-to-bottom with no hidden state, which makes it easier to:
 - reproduce runs
 - compare experiments
 - review changes in git
+
+Inputs:
+-----------------
+--config: Path to experiment YAML config (e.g., configs/experiments/exp001_resnet18_saliency_ckplus.yaml)
+
+Sample usage:
+-------------------
+python scripts/train.py --config configs/experiments/exp001_resnet18_saliency_ckplus.yaml
 """
 
 from __future__ import annotations

@@ -41,8 +41,3 @@ augment:
   rotation_deg: 10
   jitter_brightness: 0.15
   jitter_contrast: 0.15
-
-xai:
-  num_images: 16
-  # deeper layers (layer4) in ResNet are more semantic—good for Grad-CAM localization
-  gradcam_layer: layer4

@@ -20,8 +20,19 @@ Saliency = | d(score_class) / d(input_pixels) |
 It highlights which pixels the model is most sensitive to for that class.
 
 Notes:
-- Saliency can be noisy (that's normal). We'll start here for learning.
-- Later you can add SmoothGrad / Integrated Gradients to reduce noise.
+- Saliency can be noisy (that's normal).
+- Later add SmoothGrad / Integrated Gradients to reduce noise.
+
+Inputs:
+-----------------
+--ckpt: Path to checkpoint (e.g., artifacts/runs/exp001_resnet18_saliency_ckplus/20251015_123456/best.pt)
+--run_dir: Alternative to --ckpt; without the checkpoint filename (e.g., artifacts/runs/exp001_resnet18_saliency_ckplus/20251015_123456)
+--split: Which split to explain (train/val/test). Default: test
+--num_each: How many high-conf and low-conf samples to explain. Default: 8
+
+Sample usage:
+-------------
+python scripts/explain.py --run_dir artifacts/runs/exp001_resnet18_saliency_ckplus/20251015_123456 --split test --num_each 8
 """
 
 from __future__ import annotations
@@ -36,8 +47,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-from PIL import Image
 import matplotlib.pyplot as plt
+import pandas as pd
 
 # --------------------------------------------------------------------
 # Bootstrap so `import xai_lab...` works without pip install -e .
@@ -45,19 +56,11 @@ import matplotlib.pyplot as plt
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
-import yaml
-
 from xai_lab.data.datasets.image_csv import CsvImageDataset, CsvImageDatasetConfig
 from xai_lab.data.transforms.image import AugmentConfig, build_transforms, IMAGENET_MEAN, IMAGENET_STD
 from xai_lab.models.vision.resnet import build_resnet18
-from xai_lab.utils.paths import find_project_root
+from xai_lab.utils.paths import find_project_root, load_yaml
 from xai_lab.explainers.saliency import saliency_map
-
-
-def load_yaml(path: Path) -> Dict[str, Any]:
-    with open(path, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
-
 
 def get_device() -> torch.device:
     return torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -233,6 +236,25 @@ def main(
     path_col = data_cfg.get("path_col", "path")
     label_col = data_cfg.get("label_col", "label")
 
+    label_name_col = data_cfg.get("label_name_col", "label_name")
+
+    # Read the split CSV to get label names (same ordering as CsvImageDataset)
+    split_df = pd.read_csv(split_csv)
+
+    # Build an id -> name mapping (e.g., 3 -> "happy")
+    # drop_duplicates() prevents repeated rows from overwriting.
+    if label_name_col in split_df.columns:
+        id_to_name = dict(
+            split_df[[label_col, label_name_col]]
+            .dropna()
+            .drop_duplicates()
+            .assign(**{label_col: lambda d: d[label_col].astype(int),
+                      label_name_col: lambda d: d[label_name_col].astype(str).str.strip()})
+            .values
+        )
+    else:
+        id_to_name = {}
+
     input_size = int(cfg["model"].get("input_size", 224))
 
     # Aug config is read for consistency, but train=False means no random augmentation is applied here.
@@ -292,6 +314,9 @@ def main(
         y_pred = int(pred[index])
         y_conf = float(conf[index])
 
+        true_name = id_to_name.get(y_true, str(y_true))
+        pred_name = id_to_name.get(y_pred, str(y_pred))
+
         # Saliency for the predicted class (default in saliency_map)
         heat = saliency_map(model, x1, target_class=y_pred)  # [H,W] in [0,1]
         heat_np = heat.detach().cpu().numpy()
@@ -302,7 +327,10 @@ def main(
         stem = Path(ds.paths[index]).stem
         out_file = out_dir / bucket / f"{index:04d}_{stem}_t{y_true}_p{y_pred}_c{y_conf:.3f}.png"
 
-        title = f"{bucket} | idx={index} | true={y_true} pred={y_pred} conf={y_conf:.3f} | {stem}"
+        title = (
+            f"{bucket} | idx={index} | "
+            f"true={y_true}:{true_name} pred={y_pred}:{pred_name} conf={y_conf:.3f} | {stem}"
+        )
         save_saliency_triplet(out_file, img_uint8=img_uint8, heatmap01=heat_np, title=title)
 
         # Write one-line record so you can trace images back to data
@@ -335,6 +363,10 @@ if __name__ == "__main__":
     parser.add_argument("--split", type=str, default="test", choices=["train", "val", "test"], help="Which split to explain.")
     parser.add_argument("--num_each", type=int, default=8, help="How many high-conf and low-conf samples to explain.")
     args = parser.parse_args()
+
+    if not args.ckpt and not args.run_dir:
+        print("Error: Provide either --run_dir or --ckpt.")
+        sys.exit(1)
 
     ckpt_path = Path(args.ckpt) if args.ckpt else None
     run_dir_path = Path(args.run_dir) if args.run_dir else None
