@@ -1,0 +1,15 @@
+name: gradcam
+
+params:
+  # Conv layer path inside the model for Grad-CAM
+  # For ResNet: layer4 is the common default
+  target_layer_path: layer4
+
+target: pred
+
+selection:
+  split: test
+  k_each: 16  # top 16 high-confidence + top 16 low-confidence
+
+output:
+  subdir: xai/gradcam

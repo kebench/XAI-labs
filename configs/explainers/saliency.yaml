@@ -1,0 +1,13 @@
+name: saliency
+
+# Which class to explain:
+# - pred: explain the predicted class
+# - true: explain the ground-truth label
+target: pred
+
+selection:
+  split: test
+  k_each: 16    # top 16 high-confidence + top 16 low-confidence
+
+output:
+  subdir: xai/saliency
