@@ -13,6 +13,10 @@ Either:
 or:
   --run_dir artifacts/runs/<experiment>/<run_id>   (uses best.pt automatically)
 
+Usage
+-----
+python scripts/eval.py --run_dir artifacts/runs/exp001_ckplus_resnet18/20251015_123456
+
 What it produces (in artifacts/reports/<experiment>/<run_id>/)
 --------------------------------------------------------------
 - test_summary.json
@@ -36,30 +40,22 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
-# --------------------------------------------------------------------
-# Bootstrap so `import xai_lab...` works without installing the package.
-# --------------------------------------------------------------------
+# Bootstrap imports without requiring `pip install -e .`
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
-
-import yaml
 
 from xai_lab.core.engine import evaluate
 from xai_lab.core.metrics import precision_recall_f1_from_cm
 from xai_lab.data.datasets.image_csv import CsvImageDataset, CsvImageDatasetConfig
-from xai_lab.data.transforms.image import AugmentConfig, build_transforms
-from xai_lab.models.vision.resnet import build_resnet18
 from xai_lab.utils.paths import find_project_root, load_yaml
+from xai_lab.utils.imports import import_callable
+from xai_lab.models.vision.factory import build_model_from_config
+from xai_lab.utils.transform_factory import build_transform_pipeline
+
+# Backward-compat fallback (if transforms section not present yet)
+from xai_lab.data.transforms.image import AugmentConfig, build_transforms
 
 def get_device(prefer: Optional[str] = None) -> torch.device:
-    """
-    Choose device.
-
-    prefer can be:
-      - "cuda" (force if available)
-      - "cpu"
-      - None (auto)
-    """
     if prefer == "cpu":
         return torch.device("cpu")
     if prefer == "cuda":
@@ -68,12 +64,6 @@ def get_device(prefer: Optional[str] = None) -> torch.device:
 
 
 def resolve_ckpt_and_run_dir(ckpt: Optional[Path], run_dir: Optional[Path]) -> Tuple[Path, Path]:
-    """
-    Decide which checkpoint to load and which run directory it belongs to.
-
-    - If run_dir is provided, use run_dir/best.pt by default.
-    - If ckpt is provided, infer run_dir as ckpt.parent.
-    """
     if run_dir is not None:
         run_dir = run_dir.resolve()
         ckpt_path = (run_dir / "best.pt").resolve()
@@ -85,41 +75,18 @@ def resolve_ckpt_and_run_dir(ckpt: Optional[Path], run_dir: Optional[Path]) -> T
         ckpt_path = ckpt.resolve()
         if not ckpt_path.exists():
             raise FileNotFoundError(f"Checkpoint not found: {ckpt_path}")
-        inferred_run_dir = ckpt_path.parent
-        return ckpt_path, inferred_run_dir
+        return ckpt_path, ckpt_path.parent
 
     raise ValueError("Provide either --ckpt or --run_dir.")
 
 
 def reports_dir_from_run_dir(repo_root: Path, cfg: Dict[str, Any], run_dir: Path) -> Path:
-    """
-    Match the training convention:
-      run_dir = artifacts/runs/<run_name>/<run_id>/
-      reports = artifacts/reports/<run_name>/<run_id>/
-
-    We get:
-      - base_out from cfg["run"]["output_dir"] (default artifacts)
-      - run_name from cfg["run"]["name"]
-      - run_id from run_dir.name
-    """
     run_name = cfg["run"]["name"]
     base_out = repo_root / cfg["run"].get("output_dir", "artifacts")
     run_id = run_dir.name
     out = (base_out / "reports" / run_name / run_id).resolve()
     out.mkdir(parents=True, exist_ok=True)
     return out
-
-
-def build_model(model_name: str, num_classes: int, pretrained: bool) -> nn.Module:
-    """
-    Build the same architecture that was trained.
-
-    For now we support resnet18. Extend here when you add more models.
-    """
-    if model_name == "resnet18":
-        return build_resnet18(num_classes=num_classes, pretrained=pretrained)
-    raise ValueError(f"Unsupported model_name={model_name}. Extend build_model() for new architectures.")
-
 
 def main(ckpt: Optional[Path], run_dir: Optional[Path], device_pref: Optional[str]) -> None:
     repo_root = find_project_root(PROJECT_ROOT)
@@ -131,40 +98,30 @@ def main(ckpt: Optional[Path], run_dir: Optional[Path], device_pref: Optional[st
     print(f"[eval] ckpt={ckpt_path}")
     print(f"[eval] run_dir={resolved_run_dir}")
 
-    # ----------------------------
-    # Load checkpoint + config
-    # ----------------------------
     checkpoint = torch.load(ckpt_path, map_location="cpu")
 
+    # Load the exact config used in training
     config_path = Path(checkpoint["config_path"]).resolve()
     if not config_path.exists():
         raise FileNotFoundError(f"config_used.yaml not found at: {config_path}")
-
     cfg = load_yaml(config_path)
 
-    # ----------------------------
-    # Build test dataset/loader
-    # ----------------------------
+    # Build test dataset
     data_cfg = cfg["data"]
     test_csv = (repo_root / data_cfg["test_csv"]).resolve()
+
     path_col = data_cfg.get("path_col", "path")
     label_col = data_cfg.get("label_col", "label")
 
-    input_size = int(cfg["model"].get("input_size", 224))
-
-    # For evaluation, we use deterministic preprocessing (train=False).
-    # AugmentConfig is still read from cfg for consistency, but it's not used in eval transforms.
-    aug_cfg = AugmentConfig(
-        crop_scale_min=float(cfg.get("augment", {}).get("crop_scale_min", 0.85)),
-        hflip_p=float(cfg.get("augment", {}).get("hflip_p", 0.5)),
-        rotation_deg=int(cfg.get("augment", {}).get("rotation_deg", 10)),
-        jitter_brightness=float(cfg.get("augment", {}).get("jitter_brightness", 0.15)),
-        jitter_contrast=float(cfg.get("augment", {}).get("jitter_contrast", 0.15)),
-    )
-    test_tfms = build_transforms(input_size=input_size, train=False, aug=aug_cfg)
+    test_tfms = build_transform_pipeline(cfg, "eval")
 
     test_ds = CsvImageDataset(
-        CsvImageDatasetConfig(csv_path=test_csv, path_col=path_col, label_col=label_col, project_root=repo_root),
+        CsvImageDatasetConfig(
+            csv_path=test_csv,
+            path_col=path_col,
+            label_col=label_col,
+            project_root=repo_root,
+        ),
         transform=test_tfms,
     )
 
@@ -181,48 +138,33 @@ def main(ckpt: Optional[Path], run_dir: Optional[Path], device_pref: Optional[st
 
     print(f"[data] test={len(test_ds)}")
 
-    # ----------------------------
-    # Rebuild model + load weights
-    # ----------------------------
-    model_name = checkpoint.get("model_name", cfg["model"].get("name", "resnet18"))
-    num_classes = int(checkpoint.get("num_classes", cfg["model"]["num_classes"]))
-    pretrained = bool(cfg["model"].get("pretrained", True))
+    # Build model (model-agnostic)
+    # Prefer model_cfg from checkpoint if present, else use cfg["model"].
+    model_cfg = checkpoint.get("model_cfg", cfg["model"])
+    model_cfg = dict(model_cfg)
+    model_cfg["num_classes"] = int(checkpoint.get("num_classes", model_cfg["num_classes"]))
 
-    model = build_model(model_name=model_name, num_classes=num_classes, pretrained=pretrained)
+    model = build_model_from_config(model_cfg)
     model.load_state_dict(checkpoint["model_state"])
-    model = model.to(device)
+    model = model.to(device).eval()
 
-    # ----------------------------
-    # Loss function (for reporting)
-    # ----------------------------
-    # For eval, plain cross-entropy is fine as a reporting loss.
-    # (If you trained with class weights, that affects training dynamics.
-    #  Test metrics like macro-F1 matter more than the absolute loss value.)
+    model_name = str(model_cfg.get("name", "unknown"))
+    num_classes = int(model_cfg["num_classes"])
+
+    # Loss is for reporting; core metrics matter more (macro-F1)
     criterion: nn.Module = nn.CrossEntropyLoss()
 
-    # ----------------------------
-    # Run evaluation
-    # ----------------------------
     test_res = evaluate(model, test_loader, criterion, device, num_classes=num_classes)
-
     precision, recall, f1, macro_f1 = precision_recall_f1_from_cm(test_res.cm)
 
-    print(
-        f"[test] loss={test_res.loss:.4f} "
-        f"acc={test_res.accuracy:.4f} "
-        f"macro_f1={test_res.macro_f1:.4f}"
-    )
+    print(f"[test] loss={test_res.loss:.4f} acc={test_res.accuracy:.4f} macro_f1={test_res.macro_f1:.4f}")
 
-    # ----------------------------
-    # Save report outputs
-    # ----------------------------
+    # Write reports
     reports_dir = reports_dir_from_run_dir(repo_root, cfg, resolved_run_dir)
 
-    # Confusion matrix CSV
     cm_csv_path = reports_dir / "test_confusion_matrix.csv"
     np.savetxt(cm_csv_path, test_res.cm.cpu().numpy().astype(int), fmt="%d", delimiter=",")
 
-    # Summary JSON
     summary = {
         "run_dir": str(resolved_run_dir),
         "ckpt": str(ckpt_path),
@@ -251,7 +193,7 @@ def main(ckpt: Optional[Path], run_dir: Optional[Path], device_pref: Optional[st
         json.dump(summary, f, indent=2)
 
     print(f"[eval] reports_dir={reports_dir}")
-    print("[eval] wrote test_summary.json and test_confusion_matrix.csv")
+    print("[eval] wrote test_summary.json + test_confusion_matrix.csv")
 
 
 if __name__ == "__main__":
@@ -263,8 +205,5 @@ if __name__ == "__main__":
 
     ckpt_path = Path(args.ckpt) if args.ckpt else None
     run_dir_path = Path(args.run_dir) if args.run_dir else None
-
-    if ckpt_path is None and run_dir_path is None:
-        raise SystemExit("Provide path to --ckpt or --run_dir")
 
     main(ckpt=ckpt_path, run_dir=run_dir_path, device_pref=args.device)

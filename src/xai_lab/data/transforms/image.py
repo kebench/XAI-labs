@@ -60,3 +60,43 @@ def build_transforms(input_size: int, train: bool, aug: AugmentConfig) -> transf
         transforms.ToTensor(),
         transforms.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
     ])
+
+def build_eval_transforms(input_size: int = 224):
+    """
+    Deterministic preprocessing for eval/test:
+    resize -> tensor -> normalize
+
+    Wrapper so YAML can call a simple function without needing AugmentConfig.
+    """
+    return build_transforms(input_size=input_size, train=False, aug=AugmentConfig())
+
+
+def build_train_transforms(input_size: int = 224, aug: AugmentConfig | None = None):
+    """
+    Training preprocessing:
+    augmentation -> tensor -> normalize
+
+    Wrapper so YAML can call it if you later refactor train.py the same way.
+    """
+    return build_transforms(input_size=input_size, train=True, aug=aug or AugmentConfig())
+
+def build_eval_transforms(input_size: int = 224):
+    return build_transforms(input_size=input_size, train=False, aug=AugmentConfig())
+
+
+def build_train_transforms(
+    input_size: int = 224,
+    crop_scale_min: float = 0.85,
+    hflip_p: float = 0.5,
+    rotation_deg: int = 10,
+    jitter_brightness: float = 0.15,
+    jitter_contrast: float = 0.15,
+):
+    aug = AugmentConfig(
+        crop_scale_min=crop_scale_min,
+        hflip_p=hflip_p,
+        rotation_deg=rotation_deg,
+        jitter_brightness=jitter_brightness,
+        jitter_contrast=jitter_contrast,
+    )
+    return build_transforms(input_size=input_size, train=True, aug=aug)

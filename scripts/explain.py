@@ -177,6 +177,7 @@ def main(run_dir: Optional[Path], ckpt: Optional[Path], method_config: Path) -> 
         id_to_name = dict(tmp.values.tolist())
 
     input_size = int(exp_cfg["model"].get("input_size", 224))
+    # TO DO: Move augmentation/transformation out since transformations are dataset-specific
     aug_cfg = AugmentConfig(
         crop_scale_min=float(exp_cfg.get("augment", {}).get("crop_scale_min", 0.85)),
         hflip_p=float(exp_cfg.get("augment", {}).get("hflip_p", 0.5)),

@@ -41,3 +41,9 @@ augment:
   rotation_deg: 10
   jitter_brightness: 0.15
   jitter_contrast: 0.15
+
+transforms:
+  eval:
+    builder: xai_lab.data.transforms.image:build_eval_transforms
+    params:
+      input_size: 224
