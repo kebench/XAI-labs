@@ -39,3 +39,11 @@ def resolve_paths(paths: Iterable[str], project_root: Path | None = None) -> lis
 def load_yaml(path: Path) -> Dict[str, Any]:
     with open(path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
+
+def reports_dir_from_run_dir(repo_root: Path, cfg: Dict[str, Any], run_dir: Path) -> Path:
+    run_name = cfg["run"]["name"]
+    base_out = repo_root / cfg["run"].get("output_dir", "artifacts")
+    run_id = run_dir.name
+    out = (base_out / "reports" / run_name / run_id).resolve()
+    out.mkdir(parents=True, exist_ok=True)
+    return out

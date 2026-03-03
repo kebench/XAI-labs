@@ -47,21 +47,11 @@ sys.path.insert(0, str(PROJECT_ROOT / "src"))
 from xai_lab.core.engine import evaluate
 from xai_lab.core.metrics import precision_recall_f1_from_cm
 from xai_lab.data.datasets.image_csv import CsvImageDataset, CsvImageDatasetConfig
-from xai_lab.utils.paths import find_project_root, load_yaml
-from xai_lab.utils.imports import import_callable
+from xai_lab.utils.paths import find_project_root, load_yaml, reports_dir_from_run_dir
 from xai_lab.models.vision.factory import build_model_from_config
 from xai_lab.utils.transform_factory import build_transform_pipeline
-
-# Backward-compat fallback (if transforms section not present yet)
-from xai_lab.data.transforms.image import AugmentConfig, build_transforms
-
-def get_device(prefer: Optional[str] = None) -> torch.device:
-    if prefer == "cpu":
-        return torch.device("cpu")
-    if prefer == "cuda":
-        return torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    return torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
+from xai_lab.utils.device_check import get_device
+from xai_lab.data.pipelines.factory import build_split_loader
 
 def resolve_ckpt_and_run_dir(ckpt: Optional[Path], run_dir: Optional[Path]) -> Tuple[Path, Path]:
     if run_dir is not None:
@@ -78,15 +68,6 @@ def resolve_ckpt_and_run_dir(ckpt: Optional[Path], run_dir: Optional[Path]) -> T
         return ckpt_path, ckpt_path.parent
 
     raise ValueError("Provide either --ckpt or --run_dir.")
-
-
-def reports_dir_from_run_dir(repo_root: Path, cfg: Dict[str, Any], run_dir: Path) -> Path:
-    run_name = cfg["run"]["name"]
-    base_out = repo_root / cfg["run"].get("output_dir", "artifacts")
-    run_id = run_dir.name
-    out = (base_out / "reports" / run_name / run_id).resolve()
-    out.mkdir(parents=True, exist_ok=True)
-    return out
 
 def main(ckpt: Optional[Path], run_dir: Optional[Path], device_pref: Optional[str]) -> None:
     repo_root = find_project_root(PROJECT_ROOT)
@@ -110,31 +91,7 @@ def main(ckpt: Optional[Path], run_dir: Optional[Path], device_pref: Optional[st
     data_cfg = cfg["data"]
     test_csv = (repo_root / data_cfg["test_csv"]).resolve()
 
-    path_col = data_cfg.get("path_col", "path")
-    label_col = data_cfg.get("label_col", "label")
-
-    test_tfms = build_transform_pipeline(cfg, "eval")
-
-    test_ds = CsvImageDataset(
-        CsvImageDatasetConfig(
-            csv_path=test_csv,
-            path_col=path_col,
-            label_col=label_col,
-            project_root=repo_root,
-        ),
-        transform=test_tfms,
-    )
-
-    batch_size = int(cfg["train"].get("batch_size", 64))
-    num_workers = int(cfg["train"].get("num_workers", 4))
-
-    test_loader = DataLoader(
-        test_ds,
-        batch_size=batch_size,
-        shuffle=False,
-        num_workers=num_workers,
-        pin_memory=(device.type == "cuda"),
-    )
+    test_ds, test_loader, meta = build_split_loader(cfg, repo_root, split="test", stage="eval", device_type=device.type)
 
     print(f"[data] test={len(test_ds)}")
 
