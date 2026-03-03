@@ -3,7 +3,23 @@ from __future__ import annotations
 import torch
 from xai_lab.explainers.base import Explainer
 
+"""
+Core idea:
+"How sensitive is the model's class score to each input pixel?"
+Pros:
+- simplest XAI method
+- teaches you backprop + sensitivity
+- fast
 
+Cons / common failure mode:
+- can be very noisy (high-frequency speckles)
+- gradients can highlight edges everywhere, not “meaningful concepts”
+- sensitive to preprocessing and model confidence
+
+Best use: sanity checks:
+- does the model attend to the face region at all?
+- or is it focusing on borders/background?
+"""
 class SaliencyExplainer(Explainer):
     """
     Vanilla saliency = | d(score_class) / d(input_pixels) |.

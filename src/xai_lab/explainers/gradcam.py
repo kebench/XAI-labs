@@ -20,7 +20,23 @@ def get_module_by_path(model: torch.nn.Module, path: str) -> torch.nn.Module:
             cur = getattr(cur, part)
     return cur
 
+"""
+Core idea:
+"Which spatial regions in the last conv layer are important for class c?"
 
+Pros:
+- often aligns better with human intuition
+- easier to compare across images
+
+Cons / watchouts:
+- spatial resolution is coarse (depends on layer)
+- can highlight the entire face (not very specific)
+- if model is wrong, CAM explains the wrong decision confidently
+
+Best use:
+- sanity-check attention: does it light up the actual object and not the background?
+- compare correct vs incorrect predictions
+"""
 class GradCAMExplainer(Explainer):
     """
     Grad-CAM: builds a coarse spatial heatmap using gradients wrt a conv layer.

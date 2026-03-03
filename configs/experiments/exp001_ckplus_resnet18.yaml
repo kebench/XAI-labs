@@ -43,7 +43,23 @@ augment:
   jitter_contrast: 0.15
 
 transforms:
+  train:
+    builder: xai_lab.data.transforms.image:build_train_transforms
+    params:
+      input_size: 224
+      crop_scale_min: 0.85
+      hflip_p: 0.5
+      rotation_deg: 10
+      jitter_brightness: 0.15
+      jitter_contrast: 0.15
+
   eval:
+    builder: xai_lab.data.transforms.image:build_eval_transforms
+    params:
+      input_size: 224
+
+  # Explain should normally be deterministic, so keep it same as eval.
+  explain:
     builder: xai_lab.data.transforms.image:build_eval_transforms
     params:
       input_size: 224

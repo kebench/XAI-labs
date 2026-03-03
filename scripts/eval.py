@@ -12,6 +12,7 @@ Either:
   --ckpt   artifacts/runs/<experiment>/<run_id>/best.pt
 or:
   --run_dir artifacts/runs/<experiment>/<run_id>   (uses best.pt automatically)
+--device cpu|cuda
 
 Usage
 -----
@@ -33,12 +34,11 @@ import argparse
 import json
 import sys
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Optional, Tuple
 
 import numpy as np
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader
 
 # Bootstrap imports without requiring `pip install -e .`
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -46,7 +46,6 @@ sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 from xai_lab.core.engine import evaluate
 from xai_lab.core.metrics import precision_recall_f1_from_cm
-from xai_lab.data.datasets.image_csv import CsvImageDataset, CsvImageDatasetConfig
 from xai_lab.utils.paths import find_project_root, load_yaml, reports_dir_from_run_dir
 from xai_lab.models.vision.factory import build_model_from_config
 from xai_lab.utils.transform_factory import build_transform_pipeline
@@ -54,6 +53,12 @@ from xai_lab.utils.device_check import get_device
 from xai_lab.data.pipelines.factory import build_split_loader
 
 def resolve_ckpt_and_run_dir(ckpt: Optional[Path], run_dir: Optional[Path]) -> Tuple[Path, Path]:
+    """
+    Decide which checkpoint to load and which run directory it belongs to.
+
+    - If run_dir is provided, use run_dir/best.pt by default.
+    - If ckpt is provided, infer run_dir as ckpt.parent.
+    """
     if run_dir is not None:
         run_dir = run_dir.resolve()
         ckpt_path = (run_dir / "best.pt").resolve()
@@ -162,5 +167,8 @@ if __name__ == "__main__":
 
     ckpt_path = Path(args.ckpt) if args.ckpt else None
     run_dir_path = Path(args.run_dir) if args.run_dir else None
+
+    if not ckpt_path and not run_dir_path:
+        raise SystemExit("Provide --ckpt or --run_dir. Use --help for more information.")
 
     main(ckpt=ckpt_path, run_dir=run_dir_path, device_pref=args.device)

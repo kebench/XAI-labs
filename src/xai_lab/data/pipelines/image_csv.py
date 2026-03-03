@@ -109,5 +109,6 @@ def build_loaders(
         "split_csv": str(split_csv),
         "id_to_name": id_to_name,
         "class_names": class_names,
+        "labels": ds.labels,
     }
     return ds, loader, meta

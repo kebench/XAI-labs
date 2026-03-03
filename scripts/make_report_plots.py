@@ -11,10 +11,9 @@ It reads:
 
 And writes plots into reports_dir.
 
--------------
-python scripts/make_report_plots.py \
-  --run_dir     artifacts/runs/<experiment>/<run_id>/ \
-  --reports_dir artifacts/reports/<experiment>/<run_id>/
+Usage
+-----
+python scripts/make_report_plots.py --run_dir artifacts/runs/<experiment>/<run_id>/ --reports_dir artifacts/reports/<experiment>/<run_id>/
 
 Notes
 -----
