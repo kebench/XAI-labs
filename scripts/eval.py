@@ -46,33 +46,11 @@ sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 from xai_lab.core.engine import evaluate
 from xai_lab.core.metrics import precision_recall_f1_from_cm
-from xai_lab.utils.paths import find_project_root, load_yaml, reports_dir_from_run_dir
+from xai_lab.utils.paths import find_project_root, load_yaml, reports_dir_from_run_dir, resolve_ckpt_and_run_dir
 from xai_lab.models.vision.factory import build_model_from_config
 from xai_lab.utils.transform_factory import build_transform_pipeline
 from xai_lab.utils.device_check import get_device
 from xai_lab.data.pipelines.factory import build_split_loader
-
-def resolve_ckpt_and_run_dir(ckpt: Optional[Path], run_dir: Optional[Path]) -> Tuple[Path, Path]:
-    """
-    Decide which checkpoint to load and which run directory it belongs to.
-
-    - If run_dir is provided, use run_dir/best.pt by default.
-    - If ckpt is provided, infer run_dir as ckpt.parent.
-    """
-    if run_dir is not None:
-        run_dir = run_dir.resolve()
-        ckpt_path = (run_dir / "best.pt").resolve()
-        if not ckpt_path.exists():
-            raise FileNotFoundError(f"best.pt not found under run_dir: {ckpt_path}")
-        return ckpt_path, run_dir
-
-    if ckpt is not None:
-        ckpt_path = ckpt.resolve()
-        if not ckpt_path.exists():
-            raise FileNotFoundError(f"Checkpoint not found: {ckpt_path}")
-        return ckpt_path, ckpt_path.parent
-
-    raise ValueError("Provide either --ckpt or --run_dir.")
 
 def main(ckpt: Optional[Path], run_dir: Optional[Path], device_pref: Optional[str]) -> None:
     repo_root = find_project_root(PROJECT_ROOT)

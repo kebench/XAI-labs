@@ -37,7 +37,7 @@ Inputs:
 Sample usage:
 -------------
 python scripts/explain.py --run_dir artifacts/runs/exp001_ckplus_resnet18/20260223_151702 --method_config configs/explainers/saliency.yaml
-python scripts/explain.py --run_dir artifacts/runs/exp001_ckplus_resnet18/20260223_151702 --method_config configs/explainers/gradcam.yaml
+python scripts/explain.py --run_dir artifacts/runs/exp001_ckplus_resnet18/20260303_153317 --method_config configs/explainers/gradcam.yaml
 """
 
 from __future__ import annotations
@@ -57,48 +57,16 @@ from torch.utils.data import DataLoader
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
-from xai_lab.utils.paths import find_project_root, load_yaml
+from xai_lab.data.pipelines.factory import build_split_loader
+from xai_lab.utils.paths import find_project_root, load_yaml, reports_dir_from_run_dir, resolve_ckpt_and_run_dir
 from xai_lab.data.datasets.image_csv import CsvImageDataset, CsvImageDatasetConfig
 from xai_lab.data.transforms.image import AugmentConfig, build_transforms
 from xai_lab.explainers.registry import build_explainer_from_config
 from xai_lab.utils.vis import denorm_to_uint8, save_triplet
+from xai_lab.utils.device_check import get_device
 
 # optional but recommended if you added it:
 from xai_lab.models.vision.factory import build_model
-
-def get_device() -> torch.device:
-    return torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-
-def resolve_ckpt_and_run_dir(ckpt: Optional[Path], run_dir: Optional[Path]) -> Tuple[Path, Path]:
-    """
-    - If run_dir is provided, use run_dir/best.pt
-    - Else use --ckpt and infer run_dir as ckpt.parent
-    """
-    if run_dir is not None:
-        run_dir = run_dir.resolve()
-        ckpt_path = (run_dir / "best.pt").resolve()
-        if not ckpt_path.exists():
-            raise FileNotFoundError(f"best.pt not found: {ckpt_path}")
-        return ckpt_path, run_dir
-
-    if ckpt is not None:
-        ckpt_path = ckpt.resolve()
-        if not ckpt_path.exists():
-            raise FileNotFoundError(f"Checkpoint not found: {ckpt_path}")
-        return ckpt_path, ckpt_path.parent
-
-    raise ValueError("Provide either --run_dir or --ckpt.")
-
-
-def reports_dir_from_run_dir(repo_root: Path, exp_cfg: Dict[str, Any], run_dir: Path) -> Path:
-    run_name = exp_cfg["run"]["name"]
-    base_out = repo_root / exp_cfg["run"].get("output_dir", "artifacts")
-    run_id = run_dir.name
-    out = (base_out / "reports" / run_name / run_id).resolve()
-    out.mkdir(parents=True, exist_ok=True)
-    return out
-
 
 @torch.no_grad()
 def infer_predictions_and_confidence(model: nn.Module, loader: DataLoader, device: torch.device):
@@ -145,13 +113,15 @@ def main(run_dir: Optional[Path], ckpt: Optional[Path], method_config: Path) -> 
     print(f"[explain] ckpt={ckpt_path}")
     print(f"[explain] run_dir={resolved_run_dir}")
 
-
+    #Load experiment config
     exp_cfg_path = Path(checkpoint["config_path"]).resolve()
     exp_cfg = load_yaml(exp_cfg_path)
 
+    # Load explainer config
     method_cfg = load_yaml(method_config)
     explainer = build_explainer_from_config(method_cfg)
 
+    # Set directories for results of explainer
     reports_dir = reports_dir_from_run_dir(repo_root, exp_cfg, resolved_run_dir)
     subdir = method_cfg.get("output", {}).get("subdir", f"xai/{method_cfg['name']}")
     out_dir = (reports_dir / subdir).resolve()
@@ -164,7 +134,6 @@ def main(run_dir: Optional[Path], ckpt: Optional[Path], method_config: Path) -> 
 
     data_cfg = exp_cfg["data"]
     split_csv = (repo_root / data_cfg[f"{split}_csv"]).resolve()
-    path_col = data_cfg.get("path_col", "path")
     label_col = data_cfg.get("label_col", "label")
     label_name_col = data_cfg.get("label_name_col", "label_name")
 
@@ -176,37 +145,20 @@ def main(run_dir: Optional[Path], ckpt: Optional[Path], method_config: Path) -> 
         tmp[label_name_col] = tmp[label_name_col].astype(str).str.strip()
         id_to_name = dict(tmp.values.tolist())
 
-    input_size = int(exp_cfg["model"].get("input_size", 224))
-    # TO DO: Move augmentation/transformation out since transformations are dataset-specific
-    aug_cfg = AugmentConfig(
-        crop_scale_min=float(exp_cfg.get("augment", {}).get("crop_scale_min", 0.85)),
-        hflip_p=float(exp_cfg.get("augment", {}).get("hflip_p", 0.5)),
-        rotation_deg=int(exp_cfg.get("augment", {}).get("rotation_deg", 10)),
-        jitter_brightness=float(exp_cfg.get("augment", {}).get("jitter_brightness", 0.15)),
-        jitter_contrast=float(exp_cfg.get("augment", {}).get("jitter_contrast", 0.15)),
-    )
-    tfms = build_transforms(input_size=input_size, train=False, aug=aug_cfg)
-
-    ds = CsvImageDataset(
-        CsvImageDatasetConfig(csv_path=split_csv, path_col=path_col, label_col=label_col, project_root=repo_root),
-        transform=tfms,
-    )
-    loader = DataLoader(
-        ds,
-        batch_size=int(exp_cfg["train"].get("batch_size", 64)),
-        shuffle=False,
-        num_workers=int(exp_cfg["train"].get("num_workers", 4)),
-        pin_memory=(device.type == "cuda"),
-    )
+    # Build the dataset, data loader, and labels
+    ds, loader, meta = build_split_loader(exp_cfg, repo_root, split=split, stage="explain", device_type=device.type)
 
     model_name = checkpoint.get("model_name", exp_cfg["model"].get("name", "resnet18"))
     num_classes = int(checkpoint.get("num_classes", exp_cfg["model"]["num_classes"]))
     pretrained = bool(exp_cfg["model"].get("pretrained", True))
 
+    # Create the model
     model = build_model(name=model_name, num_classes=num_classes, pretrained=pretrained)
     model.load_state_dict(checkpoint["model_state"])
     model = model.to(device).eval()
 
+    # Infer predictions and select highest and lowest confidence based on the predictions
+    # TO DO: Might have to make this callable via yaml config instead--let's see how it goes
     pred, true, conf = infer_predictions_and_confidence(model, loader, device)
     high_idx, low_idx = select_high_low(conf, k_each=k_each)
 
