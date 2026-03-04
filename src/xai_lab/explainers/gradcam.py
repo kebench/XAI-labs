@@ -2,13 +2,30 @@ from __future__ import annotations
 
 import torch
 import torch.nn.functional as F
+from xai_lab.explainers.base import Explainer
+
+
+def get_module_by_path(model: torch.nn.Module, path: str) -> torch.nn.Module:
+    """
+    Resolve a module via dotted path string.
+    Examples:
+      "layer4" -> model.layer4
+      "layer4.1.conv2" -> model.layer4[1].conv2
+    """
+    cur = model
+    for part in path.split("."):
+        if part.isdigit():
+            cur = cur[int(part)]
+        else:
+            cur = getattr(cur, part)
+    return cur
 
 """
 Core idea:
 "Which spatial regions in the last conv layer are important for class c?"
 
 Pros:
-- often aligns better with human intuition (“eyes/mouth region”)
+- often aligns better with human intuition
 - easier to compare across images
 
 Cons / watchouts:
@@ -17,59 +34,57 @@ Cons / watchouts:
 - if model is wrong, CAM explains the wrong decision confidently
 
 Best use:
-- sanity-check attention: does it light up face not background?
+- sanity-check attention: does it light up the actual object and not the background?
 - compare correct vs incorrect predictions
 """
-
-class GradCAM:
+class GradCAMExplainer(Explainer):
     """
-    Grad-CAM implementation.
-
-    Why Grad-CAM:
-      Uses gradients in a chosen conv layer to produce a coarse spatial map
-      showing "where" the network looked to make a class decision.
+    Grad-CAM: builds a coarse spatial heatmap using gradients wrt a conv layer.
+    Returns [H,W] in [0,1].
     """
+    name = "gradcam"
 
-    def __init__(self, model: torch.nn.Module, target_layer: torch.nn.Module):
-        self.model = model
-        self.target_layer = target_layer
-        self.activations = None
-        self.gradients = None
+    def __init__(self, target_layer_path: str = "layer4"):
+        self.target_layer_path = target_layer_path
+        self._activations = None
+        self._gradients = None
+        self._hooks = []
 
-        self.fwd_hook = target_layer.register_forward_hook(self._save_activations)
-        self.bwd_hook = target_layer.register_full_backward_hook(self._save_gradients)
+    def _register_hooks(self, layer: torch.nn.Module):
+        def fwd_hook(_m, _inp, out):
+            self._activations = out.detach()
 
-    def close(self):
-        self.fwd_hook.remove()
-        self.bwd_hook.remove()
+        def bwd_hook(_m, _gin, gout):
+            self._gradients = gout[0].detach()
 
-    def _save_activations(self, module, inp, out):
-        self.activations = out.detach()  # [B,K,h,w]
+        self._hooks.append(layer.register_forward_hook(fwd_hook))
+        self._hooks.append(layer.register_full_backward_hook(bwd_hook))
 
-    def _save_gradients(self, module, grad_in, grad_out):
-        self.gradients = grad_out[0].detach()  # [B,K,h,w]
+    def _remove_hooks(self):
+        for h in self._hooks:
+            h.remove()
+        self._hooks = []
 
-    def __call__(self, x: torch.Tensor, target_class: int | None = None) -> torch.Tensor:
-        self.model.eval()
-        logits = self.model(x)
+    def explain(self, model: torch.nn.Module, x: torch.Tensor, target_class: int) -> torch.Tensor:
+        model.eval()
 
-        if target_class is None:
-            target_class = int(logits.argmax(dim=1).item())
+        layer = get_module_by_path(model, self.target_layer_path)
+        self._register_hooks(layer)
 
+        logits = model(x)
         score = logits[:, target_class].sum()
-        self.model.zero_grad(set_to_none=True)
+
+        model.zero_grad(set_to_none=True)
         score.backward()
 
-        # Channel weights: average gradient over spatial dims
-        weights = self.gradients.mean(dim=(2, 3), keepdim=True)  # [B,K,1,1]
-
-        # Weighted sum of activations -> [B,1,h,w]
-        cam = (weights * self.activations).sum(dim=1, keepdim=True)
+        weights = self._gradients.mean(dim=(2, 3), keepdim=True)   # [B,K,1,1]
+        cam = (weights * self._activations).sum(dim=1, keepdim=True)  # [B,1,h,w]
         cam = F.relu(cam)
 
-        # Upsample to input size
         cam = F.interpolate(cam, size=x.shape[-2:], mode="bilinear", align_corners=False)
 
         cam0 = cam[0, 0]
         cam0 = (cam0 - cam0.min()) / (cam0.max() - cam0.min() + 1e-8)
+
+        self._remove_hooks()
         return cam0

@@ -111,7 +111,7 @@ artifacts/reports/exp001_resnet18_saliency_ckplus/<run_id>/
   test_confusion_matrix.csv
 ```
 
-### Step 3.5 — Visualize (Confusion Matrix)
+### Step 3.5 — Visualize (Confusion Matrix and Training Curves)
 
 ```bash
 python scripts/make_report_plots.py --run_dir artifacts/runs/exp001_resnet18_saliency_ckplus --reports_dir artifacts/reports/exp001_resnet18_saliency_ckplus
