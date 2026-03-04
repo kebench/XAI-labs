@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-03-04
+
+### Changed
+- **Refactored CLI scripts** to be more modular and agnostic:
+  - `train.py`, `eval.py`, and `explain.py` is now model, data, and transformation agnostic
+  - `explain.py` is also explainer agnostic
+- ** Added YAML files for XAI methods ** for use in explain.py
+- **Added transform factory** and modularized data transformations for better reusability
+- **Improved CLI argument handling** with proper help descriptions and removed duplicate validation checks
+- **Enhanced path utilities** in `src/xai_lab/utils/paths.py` for better file management
+
+### Technical Improvements
+- Reduced code duplication across CLI scripts by 85+ lines
+- Improved separation of concerns between training, evaluation, and explanation workflows
+- Enhanced modularity for easier extension with new models, datasets, and XAI methods
+- Better error handling and user guidance through improved CLI help text
+
+### Code Quality
+- Streamlined argument parsing logic across all scripts
+- Consolidated path handling utilities
+- Improved code maintainability through better abstraction layers
+
 ## [0.1.0] - 2026-02-27
 
 ### Added
