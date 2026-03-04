@@ -88,9 +88,4 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    if not Path(args.run_dir).exists():
-        raise SystemExit(f"Run dir not found: {args.run_dir}")
-    if not Path(args.reports_dir).exists():
-        raise SystemExit(f"Reports dir not found: {args.reports_dir}")
-
     main(Path(args.run_dir), Path(args.reports_dir))

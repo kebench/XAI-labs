@@ -224,14 +224,13 @@ def main(run_dir: Optional[Path], ckpt: Optional[Path], method_config: Path) -> 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate XAI explanations for a trained run.")
-    parser.add_argument("--run_dir", type=str, default=None)
-    parser.add_argument("--ckpt", type=str, default=None)
-    parser.add_argument("--method_config", type=str, required=True)
+    parser.add_argument("--run_dir", type=str, default=None, help="Path to the run directory that was created when training the data.")
+    parser.add_argument("--ckpt", type=str, default=None, help="Path to checkpoint file (e.g., .../best.pt) that was created after training the data.")
+    parser.add_argument("--method_config", type=str, required=True, help="YAML file for the explainer.")
     args = parser.parse_args()
 
     if not args.ckpt and not args.run_dir:
-        print("Error: Provide either --run_dir or --ckpt.")
-        sys.exit(1)
+        raise SystemExit("Please provide either --run_dir or --ckpt. Use --help for more information")
 
     ckpt_path = Path(args.ckpt) if args.ckpt else None
     run_dir_path = Path(args.run_dir) if args.run_dir else None

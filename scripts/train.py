@@ -304,7 +304,4 @@ if __name__ == "__main__":
     parser.add_argument("--config", type=str, required=True, help="Path to training config YAML")
     args = parser.parse_args()
 
-    if not Path(args.config).exists():
-        raise SystemExit(f"Config not found: {args.config}. Use --help for more information.")
-
     main(Path(args.config))
